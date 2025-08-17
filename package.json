@@ -1,6 +1,6 @@
 {
   "name": "chatwise-mcp",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "bunx tsx --watch ./index.ts --sse",
