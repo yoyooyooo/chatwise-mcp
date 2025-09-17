@@ -42,6 +42,10 @@ Generates three sections:
 
 Message format: `[Chat#Index](ID prefix Time) Role: Content`
 
+## Environment Variables
+
+- `CHATWISE_DB_PATH`: Absolute path to the ChatWise SQLite database. When using [mcphub](https://github.com/samanhappy/mcphub) inside a mirrored container, resolve the host machine's ChatWise path and set this variable before starting the MCP server. On macOS the default location is `~/Library/Application Support/app.chatwise/app.db`.
+
 ## Troubleshooting
 
 - Error `code 127`: Missing script file or no execute permission

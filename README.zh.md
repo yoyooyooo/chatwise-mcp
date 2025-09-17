@@ -42,6 +42,10 @@ npx -y chatwise-mcp
 
 消息格式：`[会话#序号](ID前缀 时间) 角色: 内容`
 
+## 环境变量
+
+- `CHATWISE_DB_PATH`：ChatWise SQLite 数据库的绝对路径。如果在镜像/容器中通过 [mcphub](https://github.com/samanhappy/mcphub) 使用本项目，需要先在宿主机找到 ChatWise 数据库位置，并在启动 MCP 服务器前设置此变量。macOS 默认路径为 `~/Library/Application Support/app.chatwise/app.db`。
+
 ## 故障排除
 
 - 错误 `code 127`：脚本文件缺失或无执行权限
