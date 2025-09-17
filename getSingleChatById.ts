@@ -1,7 +1,6 @@
 import Database from "better-sqlite3"
-import path from "node:path"
-import os from "node:os"
 import fs from "node:fs"
+import { resolveDatabasePath } from "./databasePath"
 
 interface GetSingleChatOptions {
   chatId: string
@@ -18,16 +17,7 @@ export function getSingleChatById(options: GetSingleChatOptions): string {
   console.log(`开始处理单个会话: ${chatId}`)
   console.time("getSingleChatById执行时间")
 
-  const dbPath =
-    options.dbPath ||
-    process.env.DB_PATH ||
-    path.join(
-      os.homedir(),
-      "Library",
-      "Application Support",
-      "app.chatwise",
-      "app.db"
-    )
+  const dbPath = resolveDatabasePath(options.dbPath)
 
   if (!fs.existsSync(dbPath)) {
     throw new Error(`找不到数据库: ${dbPath}`)

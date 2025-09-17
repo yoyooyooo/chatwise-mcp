@@ -43,7 +43,7 @@ Message format: `[Chat#Index](ID prefix Time) Role: Content`
 ## Troubleshooting
 
 - Error `code 127`: Missing script file or no execute permission
-- Database error: Check ChatWise app path or set `DB_PATH` environment variable
+- Database error: Check ChatWise app path or set `CHATWISE_DB_PATH` (fallback to `DB_PATH`) environment variable
 
 ## License
 

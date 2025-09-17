@@ -43,7 +43,7 @@ npx -y chatwise-mcp
 ## 故障排除
 
 - 错误 `code 127`：脚本文件缺失或无执行权限
-- 数据库错误：检查 ChatWise 应用路径或设置 `DB_PATH` 环境变量
+- 数据库错误：检查 ChatWise 应用路径或设置 `CHATWISE_DB_PATH`（兼容 `DB_PATH`）环境变量
 
 ## 许可证
 
