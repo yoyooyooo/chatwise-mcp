@@ -1,5 +1,7 @@
 # ChatWise MCP Server
 
+👉 中文版请见 [README.zh.md](README.zh.md)
+
 MCP server for ChatWise that retrieves conversation content.
 
 ## Use Case

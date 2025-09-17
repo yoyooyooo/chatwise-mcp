@@ -1,5 +1,7 @@
 # ChatWise MCP 服务器
 
+👉 English version: [README.md](README.md)
+
 ChatWise 的 MCP 服务器，用于获取对话的内容。
 
 ## 使用场景
