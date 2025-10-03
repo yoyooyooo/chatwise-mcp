@@ -35,15 +35,15 @@ npx -y chatwise-mcp
 
 ## 输出格式
 
-会生成以下内容：
+输出为英文，包含以下内容：
 
 1. **单会话查看**（当 `chatIds.length === 1`）
-   - 消息按时间线展示：`Me:`/`AI:` 区分角色
-   - 若 `includeTools=true`，将追加展示每条消息解析到的“工具调用/工具结果”
+   - 段落标题："Chat Info"，随后是完整时间线；`Me:`/`AI:` 区分角色
+   - 若 `includeTools=true`，每条消息后追加 `<Tool Call>/<Args>/<Tool Result>`
 2. **多会话合并**（当 `chatIds.length > 1`）
-   - **元信息**：每个会话的基本信息（标题、时间范围）
-   - **逐会话线性叙述**：按会话分组展示所有消息；若 `includeTools=true`，每条消息后追加展示解析到的“工具调用/工具结果”
-   - **公共对齐**：标记在所有会话中都出现的共同消息
+   - **Meta**：每个会话的基本信息（Title、Time Range）
+   - **Per-Chat Narrative**：按会话分组展示所有消息；若 `includeTools=true`，每条消息后追加 `<Tool Call>/<Args>/<Tool Result>`
+   - **Common Alignment**：标记“在所有会话中都出现”的共同消息，并附上 `Refs: chat#index(idPrefix)`
 
 消息格式：`[会话#序号](ID前缀 时间) 角色: 内容`
 

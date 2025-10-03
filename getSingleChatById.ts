@@ -14,16 +14,16 @@ export function getSingleChatById(options: GetSingleChatOptions): string {
   const includeTools = options.includeTools ?? true
 
   if (!chatId || chatId.trim() === "") {
-    throw new Error("chatId 不能为空")
+    throw new Error("chatId cannot be empty")
   }
 
-  console.log(`开始处理单个会话: ${chatId}`)
-  console.time("getSingleChatById执行时间")
+  console.log(`Start processing single chat: ${chatId}`)
+  console.time("getSingleChatById time")
 
   const dbPath = resolveDatabasePath(options.dbPath)
 
   if (!fs.existsSync(dbPath)) {
-    throw new Error(`找不到数据库: ${dbPath}`)
+    throw new Error(`Database not found: ${dbPath}`)
   }
 
   const db = Database(dbPath, { readonly: true })
@@ -31,11 +31,11 @@ export function getSingleChatById(options: GetSingleChatOptions): string {
   try {
     let output = ""
 
-    // 获取会话基本信息
+    // Chat info
     const chatInfoQuery = `
       SELECT 
         ch.id,
-        COALESCE(ch.title, '<无标题>') AS title,
+        COALESCE(ch.title, '<Untitled>') AS title,
         MIN(m.createdAt) AS min_ts,
         MAX(m.createdAt) AS max_ts,
         COUNT(m.id) AS message_count
@@ -54,20 +54,20 @@ export function getSingleChatById(options: GetSingleChatOptions): string {
     } | undefined
 
     if (!chatInfo) {
-      throw new Error(`找不到会话: ${chatId}`)
+      throw new Error(`Chat not found: ${chatId}`)
     }
 
-    // 输出会话信息
-    output += `会话信息:\n`
+    // Output Chat Info
+    output += `Chat Info:\n`
     output += `- ID: ${chatInfo.id}\n`
-    output += `- 标题: ${chatInfo.title}\n`
-    output += `- 消息数量: ${chatInfo.message_count}\n`
+    output += `- Title: ${chatInfo.title}\n`
+    output += `- Message Count: ${chatInfo.message_count}\n`
     if (chatInfo.min_ts && chatInfo.max_ts) {
-      output += `- 时间范围: ${formatTimestampFromNumber(chatInfo.min_ts)} ~ ${formatTimestampFromNumber(chatInfo.max_ts)}\n`
+      output += `- Time Range: ${formatTimestampFromNumber(chatInfo.min_ts)} ~ ${formatTimestampFromNumber(chatInfo.max_ts)}\n`
     }
     output += "---\n"
 
-    // 获取所有消息
+    // Fetch all messages
     const messagesQuery = `
       SELECT 
         m.id,
@@ -91,9 +91,9 @@ export function getSingleChatById(options: GetSingleChatOptions): string {
     }>
 
     if (messages.length === 0) {
-      output += "该会话暂无消息\n"
+      output += "No messages in this chat\n"
     } else {
-      output += "消息记录:\n"
+      output += "Messages:\n"
       messages.forEach((msg) => {
         const timestamp = formatTimestampFromNumber(msg.createdAt)
         const prefix = rolePrefix(msg.role)
@@ -106,8 +106,8 @@ export function getSingleChatById(options: GetSingleChatOptions): string {
       })
     }
 
-    console.timeEnd("getSingleChatById执行时间")
-    console.log("单会话处理完成")
+    console.timeEnd("getSingleChatById time")
+    console.log("Single chat processed")
     return output.trim()
   } finally {
     db.close()

@@ -16,8 +16,8 @@ Examples: reviewing a single important conversation, merging conversations from 
 </usecase>
 
 <behavior>
-- Single chat: returns "会话信息" and a full message timeline with role markers (Me:/AI:). If includeTools=true, appends per-message tool call/result blocks parsed from metadata.
-- Multiple chats: returns three sections — "元信息", "逐会话线性叙述", and "公共对齐". If includeTools=true, appends per-message tool call/result blocks in the narrative section. "公共对齐" is computed from role+content only (ignores tool blocks, files, citations, etc.).
+- Single chat: returns "Chat Info" and a full message timeline with role markers (Me:/AI:). If includeTools=true, appends per-message tool call/result blocks parsed from metadata.
+- Multiple chats: returns three sections — "Meta", "Per-Chat Narrative", and "Common Alignment". If includeTools=true, appends per-message tool call/result blocks in the narrative section. "Common Alignment" is computed from role+content only (ignores tool blocks, files, citations, etc.).
 </behavior>
 
 <parameters>

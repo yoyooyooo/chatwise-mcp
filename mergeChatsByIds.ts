@@ -38,18 +38,18 @@ export function mergeChatsByIds(options: MergeChatsOptions): string {
 
     let output = ""
 
-    // 系统指令
+    // Instruction (English)
     output +=
-      "系统指令: 你将看到多个会话分别按时间线展开的原始记录，然后在末尾给出公共部分的引用对齐。请基于：\n- 逐会话线性叙述：保留指代、递进与修正关系\n- 公共对齐：用 [公共] 项引用到各会话中的索引（如 1#3 表示会话1的第3条），输出共同结论与差异。\n"
+      "Instruction: You will see raw timelines for multiple chats, followed by a common alignment section that lists messages present in all chats with references.\n- Narrative: keep coreference, progression, and corrections per chat timeline\n- Common alignment: use [Common] items to reference indices from each chat (e.g., 1#3 means chat 1, item 3), summarize shared conclusions and differences.\n"
     output += "---\n"
-    output += "元信息:\n"
+    output += "Meta:\n"
 
     // 元信息查询
     const metaQuery = `
       WITH chats(id) AS (VALUES ${valuesClause}),
       info AS (
         SELECT ROW_NUMBER() OVER () AS idx, c.id,
-               COALESCE(ch.title,'<无标题>') AS title,
+               COALESCE(ch.title,'<Untitled>') AS title,
                MIN(m.createdAt) AS min_ts,
                MAX(m.createdAt) AS max_ts
         FROM chats c
@@ -57,7 +57,7 @@ export function mergeChatsByIds(options: MergeChatsOptions): string {
         LEFT JOIN message m ON m.chatId=c.id
         GROUP BY c.id
       )
-      SELECT '- 会话' || idx || ': ' || id || ' | 标题: ' || title || ' | 时间: '
+      SELECT '- Chat ' || idx || ': ' || id || ' | Title: ' || title || ' | Time: '
         || CASE WHEN min_ts>1000000000000 THEN datetime(min_ts/1000,'unixepoch') ELSE datetime(min_ts,'unixepoch') END
         || ' ~ '
         || CASE WHEN max_ts>1000000000000 THEN datetime(max_ts/1000,'unixepoch') ELSE datetime(max_ts,'unixepoch') END
@@ -75,14 +75,14 @@ export function mergeChatsByIds(options: MergeChatsOptions): string {
     })
 
     output += "---\n"
-    output += "逐会话线性叙述:\n"
+    output += "Per-Chat Narrative:\n"
 
     // 获取会话头部并合并到消息输出中
     const messagesWithHeadersQuery = `
       WITH chats(id) AS (VALUES ${valuesClause}),
       info AS (
         SELECT ROW_NUMBER() OVER () AS chat_idx, c.id,
-               COALESCE(ch.title,'<无标题>') AS title
+               COALESCE(ch.title,'<Untitled>') AS title
         FROM chats c
         LEFT JOIN chat ch ON ch.id=c.id
       ),
@@ -95,7 +95,7 @@ export function mergeChatsByIds(options: MergeChatsOptions): string {
         FROM message m
         JOIN info i ON i.id=m.chatId
       )
-      SELECT '—— 会话' || chat_idx || ' ——' || char(30)
+      SELECT '—— Chat ' || chat_idx || ' ——' || char(30)
       FROM (SELECT DISTINCT chat_idx FROM msgs) d
       ORDER BY chat_idx
     `
@@ -149,7 +149,7 @@ export function mergeChatsByIds(options: MergeChatsOptions): string {
     })
 
     output += "---\n"
-    output += "公共对齐（所有会话都包含，仅展示一次，并引用各会话中的索引）:\n"
+    output += "Common Alignment (present in all chats, shown once, with refs to indices):\n"
 
     // 公共消息查询：返回结构化字段，在 TS 中统一渲染
     const commonQuery = `
@@ -200,11 +200,11 @@ export function mergeChatsByIds(options: MergeChatsOptions): string {
     }[]
     commonMessages.forEach((row) => {
       const prefix = rolePrefix(row.role_first)
-      output += `[公共]${prefix}${row.content_first}  | Refs: ${row.refs}\n`
+      output += `[Common]${prefix}${row.content_first}  | Refs: ${row.refs}\n`
     })
 
-    console.timeEnd("mergeChatsByIds执行时间")
-    console.log("处理完成，返回结果")
+    console.timeEnd("mergeChatsByIds time")
+    console.log("Processing complete, returning result")
     return output.trim()
   } finally {
     db.close()
