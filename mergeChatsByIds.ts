@@ -1,7 +1,7 @@
 import Database from "better-sqlite3"
 import fs from "node:fs"
 import { resolveDatabasePath } from "./databasePath"
-import { rolePrefix, formatToolSections } from "./utils/format.ts"
+import { rolePrefix, formatToolSections, formatTimestampFromNumber } from "./utils/format.ts"
 
 interface MergeChatsOptions {
   chatIds: string[]
@@ -108,7 +108,7 @@ export function mergeChatsByIds(options: MergeChatsOptions): string {
       output += header.replace(/\x1e/g, "\n") + "\n"
     })
 
-    // 获取所有消息（附带 meta，用于 includeTools 展示）
+    // 获取所有消息（返回数值时间戳，统一在 TS 中格式化；附带 meta 用于 includeTools 展示）
     const messagesQuery = `
       WITH chats(id) AS (VALUES ${valuesClause}),
       info AS (
@@ -118,11 +118,10 @@ export function mergeChatsByIds(options: MergeChatsOptions): string {
         SELECT i.chat_idx, m.chatId, m.id AS msg_id,
                ROW_NUMBER() OVER (PARTITION BY m.chatId ORDER BY m.createdAt, m.id) AS rn,
                m.createdAt AS ts_raw,
-               CASE WHEN m.createdAt>1000000000000 THEN datetime(m.createdAt/1000,'unixepoch') ELSE datetime(m.createdAt,'unixepoch') END AS ts_human,
                m.role, m.content, m.meta
         FROM message m JOIN info i ON i.id=m.chatId
       )
-      SELECT chat_idx, rn, msg_id, ts_human, role, content, meta
+      SELECT chat_idx, rn, msg_id, ts_raw, role, content, meta
       FROM msgs
       ORDER BY chat_idx, rn
     `
@@ -131,7 +130,7 @@ export function mergeChatsByIds(options: MergeChatsOptions): string {
       chat_idx: number
       rn: number
       msg_id: string
-      ts_human: string
+      ts_raw: number
       role: string
       content: string
       meta?: string | null
@@ -139,7 +138,9 @@ export function mergeChatsByIds(options: MergeChatsOptions): string {
 
     messages.forEach((msg) => {
       const prefix = rolePrefix(msg.role)
-      output += `[${msg.chat_idx}#${msg.rn}](${msg.msg_id.substring(0, 8)} ${msg.ts_human}) ${prefix}${msg.content}\n`
+      // 统一在 TS 层格式化时间
+      const tsHuman = formatTimestampFromNumber(msg.ts_raw)
+      output += `[${msg.chat_idx}#${msg.rn}](${msg.msg_id.substring(0, 8)} ${tsHuman}) ${prefix}${msg.content}\n`
 
       if (includeTools && msg.meta) {
         const toolBlocks = formatToolSections(msg.meta)
@@ -150,7 +151,7 @@ export function mergeChatsByIds(options: MergeChatsOptions): string {
     output += "---\n"
     output += "公共对齐（所有会话都包含，仅展示一次，并引用各会话中的索引）:\n"
 
-    // 公共消息查询
+    // 公共消息查询：返回结构化字段，在 TS 中统一渲染
     const commonQuery = `
       WITH chats(id) AS (VALUES ${valuesClause}),
       info AS (
@@ -175,18 +176,14 @@ export function mergeChatsByIds(options: MergeChatsOptions): string {
         SELECT (role_n||char(31)||cont_n) AS sig, COUNT(DISTINCT chatId) AS cnt, MIN(ts) AS min_ts FROM msgs2 GROUP BY sig
       ),
       total AS (SELECT COUNT(*) AS n FROM chats)
-      SELECT '[公共]'||
-        CASE 
-          WHEN (SELECT role FROM msgs2 x WHERE (x.role_n||char(31)||x.cont_n)=(m.role_n||char(31)||m.cont_n) ORDER BY x.ts LIMIT 1) = 'user' THEN 'Me: '
-          WHEN (SELECT role FROM msgs2 x WHERE (x.role_n||char(31)||x.cont_n)=(m.role_n||char(31)||m.cont_n) ORDER BY x.ts LIMIT 1) = 'assistant' THEN 'AI: '
-          ELSE '['||(SELECT role FROM msgs2 x WHERE (x.role_n||char(31)||x.cont_n)=(m.role_n||char(31)||m.cont_n) ORDER BY x.ts LIMIT 1)||'] '
-        END ||
-        (SELECT content FROM msgs2 x WHERE (x.role_n||char(31)||x.cont_n)=(m.role_n||char(31)||m.cont_n) ORDER BY x.ts LIMIT 1)||'  | Refs: '
-        || (
-             SELECT group_concat(m2.chat_idx||'#'||m2.rn||'('||substr(m2.msg_id,1,8)||')' , ',')
-             FROM msgs2 m2 WHERE (m2.role_n||char(31)||m2.cont_n)=(m.role_n||char(31)||m.cont_n) ORDER BY m2.chat_idx
-           )
-        || char(30)
+      SELECT 
+        (SELECT role FROM msgs2 x WHERE (x.role_n||char(31)||x.cont_n)=(m.role_n||char(31)||m.cont_n) ORDER BY x.ts LIMIT 1) AS role_first,
+        (SELECT content FROM msgs2 x WHERE (x.role_n||char(31)||x.cont_n)=(m.role_n||char(31)||m.cont_n) ORDER BY x.ts LIMIT 1) AS content_first,
+        s.min_ts AS min_ts,
+        (
+          SELECT group_concat(m2.chat_idx||'#'||m2.rn||'('||substr(m2.msg_id,1,8)||')' , ',')
+          FROM msgs2 m2 WHERE (m2.role_n||char(31)||m2.cont_n)=(m.role_n||char(31)||m.cont_n) ORDER BY m2.chat_idx
+        ) AS refs
       FROM msgs2 m
       JOIN sigs s ON s.sig=(m.role_n||char(31)||m.cont_n)
       JOIN total t ON 1=1
@@ -196,11 +193,14 @@ export function mergeChatsByIds(options: MergeChatsOptions): string {
     `
 
     const commonMessages = db.prepare(commonQuery).all() as {
-      [key: string]: string
+      role_first: string
+      content_first: string
+      min_ts: number
+      refs: string
     }[]
     commonMessages.forEach((row) => {
-      const message = Object.values(row)[0]
-      output += message.replace(/\x1e/g, "\n") + "\n"
+      const prefix = rolePrefix(row.role_first)
+      output += `[公共]${prefix}${row.content_first}  | Refs: ${row.refs}\n`
     })
 
     console.timeEnd("mergeChatsByIds执行时间")
