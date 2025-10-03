@@ -1,6 +1,7 @@
 import Database from "better-sqlite3"
 import fs from "node:fs"
 import { resolveDatabasePath } from "./databasePath"
+import { rolePrefix, formatToolSections } from "./utils/format.ts"
 
 interface MergeChatsOptions {
   chatIds: string[]
@@ -137,98 +138,12 @@ export function mergeChatsByIds(options: MergeChatsOptions): string {
     }[]
 
     messages.forEach((msg) => {
-      const rolePrefix = msg.role === 'user' ? 'Me: ' : msg.role === 'assistant' ? 'AI: ' : `[${msg.role}] `
-      output += `[${msg.chat_idx}#${msg.rn}](${msg.msg_id.substring(0, 8)} ${msg.ts_human}) ${rolePrefix}${msg.content}\n`
+      const prefix = rolePrefix(msg.role)
+      output += `[${msg.chat_idx}#${msg.rn}](${msg.msg_id.substring(0, 8)} ${msg.ts_human}) ${prefix}${msg.content}\n`
 
       if (includeTools && msg.meta) {
-        let meta: any
-        try {
-          meta = JSON.parse(msg.meta)
-        } catch {
-          meta = undefined
-        }
-        if (meta && (meta.toolCall || meta.toolResult)) {
-          // 工具调用
-          if (meta.toolCall) {
-            const callsObj = meta.toolCall
-            const entries: [string, any][] = Object.entries(callsObj as any)
-            entries.forEach(([callKey, callVal]) => {
-              const cv: any = callVal as any
-              if (cv && typeof cv === 'object') {
-                const server = cv.server_name ?? cv.server ?? ''
-                const tool = cv.tool_name ?? cv.tool ?? ''
-                const rawArgs = cv.arguments ?? cv.args ?? ''
-                let prettyArgs = ''
-                if (typeof rawArgs === 'string') {
-                  try {
-                    const parsed = JSON.parse(rawArgs)
-                    prettyArgs = JSON.stringify(parsed, null, 2)
-                  } catch {
-                    prettyArgs = String(rawArgs)
-                  }
-                } else {
-                  try {
-                    prettyArgs = JSON.stringify(rawArgs, null, 2)
-                  } catch {
-                    prettyArgs = String(rawArgs)
-                  }
-                }
-                output += `  <Tool Call> ${callKey} server=${server} tool=${tool}\n`
-                if (prettyArgs) {
-                  output += `  <Args>\n${prettyArgs}\n`
-                }
-              } else {
-                try {
-                  output += `  <Tool Call> ${callKey}: ${JSON.stringify(callVal)}\n`
-                } catch {
-                  output += `  <Tool Call> ${callKey}: ${String(callVal)}\n`
-                }
-              }
-            })
-          }
-
-          // 工具结果
-          if (meta.toolResult !== undefined) {
-            const rawRes = meta.toolResult
-            let parsedRes: any = undefined
-            if (typeof rawRes === 'string') {
-              try {
-                parsedRes = JSON.parse(rawRes)
-              } catch {
-                parsedRes = undefined
-              }
-            } else if (typeof rawRes === 'object' && rawRes !== null) {
-              parsedRes = rawRes
-            }
-
-            if (parsedRes && parsedRes.content && Array.isArray(parsedRes.content)) {
-              const textParts: string[] = []
-              for (const c of parsedRes.content) {
-                if (c && typeof c === 'object' && c.type === 'text' && typeof c.text === 'string') {
-                  textParts.push(c.text)
-                }
-              }
-              const joined = textParts.join("\n")
-              if (joined) {
-                output += `  <Tool Result>\n${joined}\n`
-              } else {
-                try {
-                  output += `  <Tool Result (JSON)> ${JSON.stringify(parsedRes, null, 2)}\n`
-                } catch {
-                  output += `  <Tool Result> [Unparseable]\n`
-                }
-              }
-            } else if (parsedRes) {
-              try {
-                output += `  <Tool Result (JSON)> ${JSON.stringify(parsedRes, null, 2)}\n`
-              } catch {
-                output += `  <Tool Result> [Unparseable]\n`
-              }
-            } else if (typeof rawRes === 'string' && rawRes.trim()) {
-              output += `  <Tool Result (Raw)> ${rawRes}\n`
-            }
-          }
-        }
+        const toolBlocks = formatToolSections(msg.meta)
+        if (toolBlocks) output += toolBlocks
       }
     })
 

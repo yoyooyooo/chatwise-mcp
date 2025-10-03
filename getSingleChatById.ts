@@ -1,6 +1,7 @@
 import Database from "better-sqlite3"
 import fs from "node:fs"
 import { resolveDatabasePath } from "./databasePath"
+import { formatTimestampFromNumber, rolePrefix, formatToolSections } from "./utils/format.ts"
 
 interface GetSingleChatOptions {
   chatId: string
@@ -56,20 +57,13 @@ export function getSingleChatById(options: GetSingleChatOptions): string {
       throw new Error(`找不到会话: ${chatId}`)
     }
 
-    // 格式化时间戳
-    const formatTimestamp = (ts: number) => {
-      return ts > 1000000000000 
-        ? new Date(ts).toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')
-        : new Date(ts * 1000).toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')
-    }
-
     // 输出会话信息
     output += `会话信息:\n`
     output += `- ID: ${chatInfo.id}\n`
     output += `- 标题: ${chatInfo.title}\n`
     output += `- 消息数量: ${chatInfo.message_count}\n`
     if (chatInfo.min_ts && chatInfo.max_ts) {
-      output += `- 时间范围: ${formatTimestamp(chatInfo.min_ts)} ~ ${formatTimestamp(chatInfo.max_ts)}\n`
+      output += `- 时间范围: ${formatTimestampFromNumber(chatInfo.min_ts)} ~ ${formatTimestampFromNumber(chatInfo.max_ts)}\n`
     }
     output += "---\n"
 
@@ -101,108 +95,13 @@ export function getSingleChatById(options: GetSingleChatOptions): string {
     } else {
       output += "消息记录:\n"
       messages.forEach((msg) => {
-        const timestamp = formatTimestamp(msg.createdAt)
-        const rolePrefix = msg.role === 'user' ? 'Me: ' : 
-                          msg.role === 'assistant' ? 'AI: ' : 
-                          `[${msg.role}] `
-        
-        output += `[#${msg.message_number}](${msg.id.substring(0, 8)} ${timestamp}) ${rolePrefix}${msg.content}\n`
+        const timestamp = formatTimestampFromNumber(msg.createdAt)
+        const prefix = rolePrefix(msg.role)
+        output += `[#${msg.message_number}](${msg.id.substring(0, 8)} ${timestamp}) ${prefix}${msg.content}\n`
 
-        // 工具调用/结果解析（可开关）
         if (includeTools && msg.meta) {
-          let meta: any
-          try {
-            meta = JSON.parse(msg.meta)
-          } catch {
-            meta = undefined
-          }
-
-          if (meta && (meta.toolCall || meta.toolResult)) {
-            // 工具调用
-            if (meta.toolCall) {
-              const callsObj = meta.toolCall
-              const entries: [string, any][] = Object.entries(callsObj as any)
-              entries.forEach(([callKey, callVal]) => {
-                const cv: any = callVal as any
-                if (cv && typeof cv === 'object') {
-                  const server = cv.server_name ?? cv.server ?? ''
-                  const tool = cv.tool_name ?? cv.tool ?? ''
-                  const rawArgs = cv.arguments ?? cv.args ?? ''
-                  let prettyArgs = ''
-                  if (typeof rawArgs === 'string') {
-                    // 尝试将参数字符串解析为 JSON，以提升可读性
-                    try {
-                      const parsed = JSON.parse(rawArgs)
-                      prettyArgs = JSON.stringify(parsed, null, 2)
-                    } catch {
-                      prettyArgs = String(rawArgs)
-                    }
-                  } else {
-                    try {
-                      prettyArgs = JSON.stringify(rawArgs, null, 2)
-                    } catch {
-                      prettyArgs = String(rawArgs)
-                    }
-                  }
-                  output += `  <Tool Call> ${callKey} server=${server} tool=${tool}\n`
-                  if (prettyArgs) {
-                    output += `  <Args>\n${prettyArgs}\n`
-                  }
-                } else {
-                  // 不确定结构，直接输出 JSON
-                  try {
-                    output += `  <Tool Call> ${callKey}: ${JSON.stringify(callVal)}\n`
-                  } catch {
-                    output += `  <Tool Call> ${callKey}: ${String(callVal)}\n`
-                  }
-                }
-              })
-            }
-
-            // 工具结果
-            if (meta.toolResult !== undefined) {
-              const rawRes = meta.toolResult
-              let parsedRes: any = undefined
-              if (typeof rawRes === 'string') {
-                try {
-                  parsedRes = JSON.parse(rawRes)
-                } catch {
-                  parsedRes = undefined
-                }
-              } else if (typeof rawRes === 'object' && rawRes !== null) {
-                parsedRes = rawRes
-              }
-
-              if (parsedRes && parsedRes.content && Array.isArray(parsedRes.content)) {
-                const textParts: string[] = []
-                for (const c of parsedRes.content) {
-                  if (c && typeof c === 'object' && c.type === 'text' && typeof c.text === 'string') {
-                    textParts.push(c.text)
-                  }
-                }
-                const joined = textParts.join("\n")
-                if (joined) {
-                  output += `  <Tool Result>\n${joined}\n`
-                } else {
-                  // 回退为 JSON 展示
-                  try {
-                    output += `  <Tool Result (JSON)> ${JSON.stringify(parsedRes, null, 2)}\n`
-                  } catch {
-                    output += `  <Tool Result> [Unparseable]\n`
-                  }
-                }
-              } else if (parsedRes) {
-                try {
-                  output += `  <Tool Result (JSON)> ${JSON.stringify(parsedRes, null, 2)}\n`
-                } catch {
-                  output += `  <Tool Result> [Unparseable]\n`
-                }
-              } else if (typeof rawRes === 'string' && rawRes.trim()) {
-                // 原始字符串直接输出
-                output += `  <Tool Result (Raw)> ${rawRes}\n`
-              }
-            }
-          }
+          const toolBlocks = formatToolSections(msg.meta)
+          if (toolBlocks) output += toolBlocks
         }
       })
     }
