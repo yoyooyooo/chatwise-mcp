@@ -26,17 +26,26 @@ Examples: reviewing a single important conversation, merging conversations from 
       chatIds: z
         .array(z.string())
         .nonempty()
-        .describe("Array of chat identifiers. For single chat viewing, provide one chat ID. For merging multiple chats, provide multiple IDs (e.g., ['chat_123'] or ['chat_123', 'conv_456', 'thread_789']). Must contain at least one valid chat ID."),
+        .describe(
+          "Array of chat identifiers. For single chat viewing, provide one chat ID. For merging multiple chats, provide multiple IDs (e.g., ['chat_123'] or ['chat_123', 'conv_456', 'thread_789']). Must contain at least one valid chat ID."
+        ),
+      includeTools: z
+        .boolean()
+        .optional()
+        .describe(
+          "Whether to include tool calls/results in responses when viewing a single chat. Default: true."
+        ),
     },
     async (args) => {
       const ids = args.chatIds as string[]
+      const includeTools = (args as any).includeTools ?? true
 
       try {
         let result: string
         
         if (ids.length === 1) {
           // 单会话查询
-          result = getSingleChatById({ chatId: ids[0] })
+          result = getSingleChatById({ chatId: ids[0], includeTools })
         } else {
           // 多会话合并
           result = mergeChatsByIds({ chatIds: ids })
