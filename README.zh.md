@@ -33,6 +33,11 @@ npx -y chatwise-mcp
 - `include_tools_in_search?`: boolean（默认 true）
 - `exclude_terms?`: string[]（默认 []）
 - `exclude_chat_ids?`: string[]（默认 []；可排除当前会话）
+- `exclude_current_chat?`: boolean（默认 true）。为 true 时工具会尽量自动排除“当前会话”：
+  - 若设置了环境变量 `CHATWISE_CURRENT_CHAT_ID` 则优先使用；
+  - 否则在最近 15 分钟内，从 `message.meta` 中检测最近一次对本服务器 `search_conversations` 的工具调用所属的 `chatId` 并排除（尽力而为，仍建议显式传 `exclude_chat_ids` 以确保稳定）。
+- `exclude_recent_user_secs?`: number（默认 60）。为避免“当前问题本身”把当前会话命中，忽略这段时间内的用户消息（仅影响匹配，不影响最终展示）。
+ - 通配最近模式：将 `intent_query` 设为 `"*"` 可直接返回时间窗内“最近活跃”的会话（按 `max_ts` 倒序）。可配合 `limit_chats`（如 10）。若希望包含非常新的用户消息，将 `exclude_recent_user_secs` 设为 0。
 - `user_only?`: boolean（默认 false；true 时仅搜索用户消息）
 - `match?`: 'any' | 'all'（默认 'any'）
 - `limit_chats?`: number（默认 10）
@@ -85,7 +90,21 @@ npx -y chatwise-mcp
   - `{ "chatIds": ["id1", "id2", "id3"], "includeTools": false }`
 - 先用 `search_conversations` 定位 Top 2，再拉取不含工具结果的全文；需要深入时对单个会话开启工具：
   - 第一步：`{ "chatIds": ["<top1>", "<top2>"], "includeTools": false }`
-  - 第二步（深读）：`{ "chatIds": ["<top1>"], "includeTools": true }`
+- 第二步（深读）：`{ "chatIds": ["<top1>"], "includeTools": true }`
+
+### delete_conversation
+
+删除指定对话及其所有消息（基于本地 ChatWise SQLite）。支持 dry-run 预览删除数量。
+
+参数：
+- `chatId`: string — 要删除的对话 ID
+- `dry_run?`: boolean — 默认为 `false`。为 `true` 时仅返回待删除行数，不执行删除
+
+返回：JSON，例如：
+- dry-run：`{ "status": "ok", "dryRun": true, "chatId": "abc", "exists": true, "toDelete": { "chat": 1, "messages": 42 } }`
+- 实际删除：`{ "status": "ok", "dryRun": false, "chatId": "abc", "deleted": { "chat": 1, "messages": 42 } }`
+
+注意：仅删除数据库行（`message` 与 `chat`），不会清理磁盘上的文件（如 `generatedFiles` 引用）。
 
 ## 环境变量
 

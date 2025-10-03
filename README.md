@@ -33,6 +33,9 @@ Parameters:
 - `include_tools_in_search?`: boolean (default true)
 - `exclude_terms?`: string[] (default [])
 - `exclude_chat_ids?`: string[] (default [])
+- `exclude_current_chat?`: boolean (default true). When true, the tool will try to auto‑exclude the current chat: first via env `CHATWISE_CURRENT_CHAT_ID`, otherwise by detecting the most recent `search_conversations` tool call (within the last 15 minutes) in `message.meta` and excluding its `chatId` (best‑effort; still recommend passing `exclude_chat_ids` explicitly for determinism).
+- `exclude_recent_user_secs?`: number (default 60). To avoid matching the current prompt itself, ignore very recent user messages within this window (affects matching only; not output rendering).
+ - Wildcard recent mode: set `intent_query` to `"*"` to list the most recent chats (by `max_ts`) within the time window. Combine with `limit_chats` (e.g., 10). If you also want to include very fresh user messages, set `exclude_recent_user_secs: 0`.
 - `user_only?`: boolean (default false; when true, only user messages are searched)
 - `match?`: 'any' | 'all' (default 'any')
 - `limit_chats?`: number (default 10)
@@ -89,6 +92,20 @@ Examples:
 - After `search_conversations`, pull top 2 chats without tool outputs, then re‑pull a specific chat with tools enabled if needed:
   - First: `{ "chatIds": ["<top1>", "<top2>"], "includeTools": false }`
   - Then (deep dive): `{ "chatIds": ["<top1>"], "includeTools": true }`
+
+### delete_conversation
+
+Delete a specific conversation and all its messages (from the local ChatWise SQLite database). Supports dry‑run.
+
+Parameters:
+- `chatId`: string — ID of the chat to delete
+- `dry_run?`: boolean — Defaults to `false`. When `true`, returns counts only and performs no deletion
+
+Returns: JSON, for example:
+- dry‑run: `{ "status": "ok", "dryRun": true, "chatId": "abc", "exists": true, "toDelete": { "chat": 1, "messages": 42 } }`
+- deletion: `{ "status": "ok", "dryRun": false, "chatId": "abc", "deleted": { "chat": 1, "messages": 42 } }`
+
+Note: Only deletes DB rows (`message` and `chat`); it does not remove any files on disk referenced by `generatedFiles`.
 
 ## Environment Variables
 
