@@ -29,7 +29,7 @@ Gather one or more conversations.
 **Parameters**:
 
 - `chatIds`: string[] — List of chat IDs. If one ID is provided, the tool returns the full timeline for that single chat; if multiple, it merges them.
-- `includeTools?`: boolean — When viewing a single chat, whether to include tool calls/results parsed from message metadata. Default `true`.
+- `includeTools?`: boolean — Whether to include tool calls/results parsed from message metadata in outputs (applies to both single and merged views). Default `true`.
 
 > Chat IDs can be obtained by right-clicking to copy
 
@@ -42,7 +42,7 @@ Outputs include:
    - If `includeTools=true`, appends parsed tool calls/results per message
 2. **Merged View** (when `chatIds.length > 1`)
    - **Meta Information**: Basic info for each conversation (title, time range)
-   - **Sequential Chat Narratives**: All messages grouped by conversation
+   - **Sequential Chat Narratives**: All messages grouped by conversation; if `includeTools=true`, appends parsed tool calls/results after each message
    - **Common Content Alignment**: Marks shared messages that appear in all conversations
 
 Message format: `[Chat#Index](ID prefix Time) Role: Content`

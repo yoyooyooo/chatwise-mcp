@@ -48,7 +48,7 @@ Examples: reviewing a single important conversation, merging conversations from 
           result = getSingleChatById({ chatId: ids[0], includeTools })
         } else {
           // 多会话合并
-          result = mergeChatsByIds({ chatIds: ids })
+          result = mergeChatsByIds({ chatIds: ids, includeTools })
         }
         
         return { content: [{ type: "text", text: result }] }
