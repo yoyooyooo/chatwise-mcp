@@ -22,6 +22,25 @@ npx -y chatwise-mcp
 
 ## Tools
 
+### search_conversations
+
+Search ChatWise conversations by intent (from the local ChatWise SQLite database). Aggregates matches by conversation and returns structured JSON for LLMs.
+
+Parameters:
+- `intent_query`: string | string[] — Fuzzy intent/keyword, or an array like ["idea","想法"]
+- `time_window?`: '7d' | '30d' | '60d' | '90d' | 'all' | { start:number; end:number } (default 'all')
+- `precision_mode?`: 'basic' | 'fuzzy' (default 'basic')
+- `include_tools_in_search?`: boolean (default true)
+- `exclude_terms?`: string[] (default [])
+- `exclude_chat_ids?`: string[] (default [])
+- `user_only?`: boolean (default false; when true, only user messages are searched)
+- `match?`: 'any' | 'all' (default 'any')
+- `limit_chats?`: number (default 10)
+- `limit_snippets_per_chat?`: number (default 3)
+- `snippet_window?`: number (default 64)
+
+Output: JSON with fields `topChatIds`, `results[{ chatId, title, hits, timeRange, snippets[] }]`, and `guidance`.
+
 ### gather_chats
 
 Gather one or more conversations.
@@ -29,7 +48,7 @@ Gather one or more conversations.
 **Parameters**:
 
 - `chatIds`: string[] — List of chat IDs. If one ID is provided, the tool returns the full timeline for that single chat; if multiple, it merges them.
-- `includeTools?`: boolean — Whether to include tool calls/results parsed from message metadata in outputs (applies to both single and merged views). Default `true`.
+- `includeTools?`: boolean — Whether to include tool calls/results parsed from message metadata in outputs (applies to both single and merged views). Default `true`. Tip: when pulling many chats after a search, set `includeTools: false` to reduce tokens.
 
 > Chat IDs can be obtained by right-clicking to copy
 
@@ -49,6 +68,8 @@ Outputs (all section titles are in English):
 Row format examples:
 - Single chat: `[#[Index]](IDprefix Time) Role: Content`
 - Merged narrative: `[Chat#Index](IDprefix Time) Role: Content`
+
+Note: `search_conversations` returns structured JSON (not text sections) to drive follow‑up calls (e.g., `gather_chats`).
 
 ## Environment Variables
 

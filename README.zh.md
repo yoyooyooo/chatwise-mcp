@@ -22,6 +22,25 @@ npx -y chatwise-mcp
 
 ## 工具
 
+### search_conversations
+
+按“意图/关键词”在 ChatWise 会话中搜索（基于本地 ChatWise SQLite）。按会话聚合命中并返回结构化 JSON，便于 LLM 消费与后续编排。
+
+参数：
+- `intent_query`: string | string[] — 模糊意图/关键词，或关键词数组（如 ["idea","想法"]）
+- `time_window?`: '7d' | '30d' | '60d' | '90d' | 'all' | { start:number; end:number }（默认 'all'）
+- `precision_mode?`: 'basic' | 'fuzzy'（默认 'basic'）
+- `include_tools_in_search?`: boolean（默认 true）
+- `exclude_terms?`: string[]（默认 []）
+- `exclude_chat_ids?`: string[]（默认 []；可排除当前会话）
+- `user_only?`: boolean（默认 false；true 时仅搜索用户消息）
+- `match?`: 'any' | 'all'（默认 'any'）
+- `limit_chats?`: number（默认 10）
+- `limit_snippets_per_chat?`: number（默认 3）
+- `snippet_window?`: number（默认 64）
+
+输出：JSON，含 `topChatIds`、`results[{ chatId, title, hits, timeRange, snippets[] }]` 与 `guidance`。
+
 ### gather_chats
 
 获取一个或多个对话。
@@ -29,7 +48,7 @@ npx -y chatwise-mcp
 **参数**：
 
 - `chatIds`: string[] — 要合并的对话 ID 列表（至少 2 个；如果只传 1 个则进入“单会话查看”模式）
-- `includeTools?`: boolean — 是否在结果中包含工具调用与结果（单会话与多会话均生效），默认 `true`
+- `includeTools?`: boolean — 是否在结果中包含工具调用与结果（单会话与多会话均生效），默认 `true`。提示：在搜索后批量拉取时，可显式传 `includeTools=false` 以减少 tokens。
 
 > 会话 id 可以右键复制得到
 
@@ -46,6 +65,8 @@ npx -y chatwise-mcp
    - **Common Alignment**：标记“在所有会话中都出现”的共同消息，并附上 `Refs: chat#index(idPrefix)`
 
 消息格式：`[会话#序号](ID前缀 时间) 角色: 内容`
+
+注：`search_conversations` 返回结构化 JSON（而非文本分段），用于驱动后续 `gather_chats` 调用。
 
 ## 环境变量
 
