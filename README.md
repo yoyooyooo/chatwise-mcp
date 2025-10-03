@@ -41,6 +41,16 @@ Parameters:
 
 Output: JSON with fields `topChatIds`, `results[{ chatId, title, hits, timeRange, snippets[] }]`, and `guidance`.
 
+Examples:
+- Recent Rust discussions in the last 60 days:
+  - `{ "intent_query": "rust", "time_window": "60d" }`
+- "Life" topics in the last 90 days (user messages only):
+  - `{ "intent_query": ["life", "生活", "日常"], "time_window": "90d", "user_only": true }`
+- Exclude the current chat from results:
+  - `{ "intent_query": "virtual scrolling", "exclude_chat_ids": ["<currentChatId>"] }`
+- Broad "ideas" search combining English and Chinese terms:
+  - `{ "intent_query": ["idea", "ideas", "想法"], "match": "any" }`
+
 ### gather_chats
 
 Gather one or more conversations.
@@ -70,6 +80,15 @@ Row format examples:
 - Merged narrative: `[Chat#Index](IDprefix Time) Role: Content`
 
 Note: `search_conversations` returns structured JSON (not text sections) to drive follow‑up calls (e.g., `gather_chats`).
+
+Examples:
+- Pull a single conversation with tool outputs:
+  - `{ "chatIds": ["abc123"], "includeTools": true }`
+- Merge several conversations while minimizing tokens (no tool outputs):
+  - `{ "chatIds": ["id1", "id2", "id3"], "includeTools": false }`
+- After `search_conversations`, pull top 2 chats without tool outputs, then re‑pull a specific chat with tools enabled if needed:
+  - First: `{ "chatIds": ["<top1>", "<top2>"], "includeTools": false }`
+  - Then (deep dive): `{ "chatIds": ["<top1>"], "includeTools": true }`
 
 ## Environment Variables
 

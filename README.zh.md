@@ -41,6 +41,16 @@ npx -y chatwise-mcp
 
 输出：JSON，含 `topChatIds`、`results[{ chatId, title, hits, timeRange, snippets[] }]` 与 `guidance`。
 
+示例：
+- 最近 60 天关于 Rust 的讨论：
+  - `{ "intent_query": "rust", "time_window": "60d" }`
+- 最近 90 天的“生活类”话题（仅用户消息）：
+  - `{ "intent_query": ["life", "生活", "日常"], "time_window": "90d", "user_only": true }`
+- 检索时排除当前会话：
+  - `{ "intent_query": "virtual scrolling", "exclude_chat_ids": ["<currentChatId>"] }`
+- 一次性检索“想法/idea”相关：
+  - `{ "intent_query": ["idea", "ideas", "想法"], "match": "any" }`
+
 ### gather_chats
 
 获取一个或多个对话。
@@ -67,6 +77,15 @@ npx -y chatwise-mcp
 消息格式：`[会话#序号](ID前缀 时间) 角色: 内容`
 
 注：`search_conversations` 返回结构化 JSON（而非文本分段），用于驱动后续 `gather_chats` 调用。
+
+示例：
+- 拉取某个会话并包含工具结果：
+  - `{ "chatIds": ["abc123"], "includeTools": true }`
+- 合并多个会话但尽量少占 tokens（不含工具结果）：
+  - `{ "chatIds": ["id1", "id2", "id3"], "includeTools": false }`
+- 先用 `search_conversations` 定位 Top 2，再拉取不含工具结果的全文；需要深入时对单个会话开启工具：
+  - 第一步：`{ "chatIds": ["<top1>", "<top2>"], "includeTools": false }`
+  - 第二步（深读）：`{ "chatIds": ["<top1>"], "includeTools": true }`
 
 ## 环境变量
 
