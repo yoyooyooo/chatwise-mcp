@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js"
 import { registerGatherChatsTool } from "./tools/gatherChats"
+import { registerSearchConversationsTool } from "./tools/searchConversations"
 
 const server = new McpServer(
   {
@@ -15,6 +16,7 @@ const server = new McpServer(
 )
 
 registerGatherChatsTool(server)
+registerSearchConversationsTool(server)
 
 export async function startServer() {
   const transport = new StdioServerTransport()

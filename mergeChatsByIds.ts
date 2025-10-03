@@ -19,7 +19,7 @@ export function mergeChatsByIds(options: MergeChatsOptions): string {
   }
 
   console.log(`开始处理 chatIds: ${JSON.stringify(chatIds)}`)
-  console.time("mergeChatsByIds执行时间")
+  console.time("mergeChatsByIds time")
 
   // 数据库路径处理
   const dbPath = resolveDatabasePath(options.dbPath)

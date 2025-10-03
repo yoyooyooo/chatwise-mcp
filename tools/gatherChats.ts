@@ -6,7 +6,7 @@ import { getSingleChatById } from "../getSingleChatById.js"
 export function registerGatherChatsTool(server: McpServer) {
   server.tool(
     "gather_chats",
-    `Gather and merge multiple chat conversations or view a single chat conversation.
+    `Gather and merge ChatWise conversations or view a single ChatWise conversation (from the local ChatWise SQLite database).
 
 <usecase>
 Perfect for:
@@ -28,8 +28,8 @@ Examples: reviewing a single important conversation, merging conversations from 
 <instructions>
 1. For a single chat, pass exactly one chat ID
 2. For multiple chats, pass an array of chat IDs; results are merged and ordered by timestamp
-3. Returns a single text block suitable for direct inclusion in prompts or notes
-4. Use specific chat IDs from your system (e.g., "chat_123", "conversation_456")
+3. Returns a single text block with sections (Meta / Per-Chat Narrative / Common Alignment) suitable for direct inclusion in prompts
+4. Use specific ChatWise chat IDs from your system (e.g., "chat_123")
 </instructions>`,
     {
       chatIds: z
@@ -41,7 +41,7 @@ Examples: reviewing a single important conversation, merging conversations from 
       includeTools: z
         .boolean()
         .optional()
-        .describe("Whether to include tool calls/results (single and merged views). Default: true."),
+        .describe("Whether to include tool calls/results (single and merged views). Default: true. Tip: when pulling many chats after a search, set includeTools=false to reduce tokens."),
     },
     async (args) => {
       const ids = args.chatIds as string[]
