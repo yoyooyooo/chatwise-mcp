@@ -35,17 +35,20 @@ Gather one or more conversations.
 
 ## Output Format
 
-Outputs include:
+Outputs (all section titles are in English):
 
 1. **Single Chat View** (when `chatIds.length === 1`)
-   - Full message timeline with `Me:`/`AI:` markers
-   - If `includeTools=true`, appends parsed tool calls/results per message
+   - Sections: `Chat Info`, then `Messages`
+   - Timeline rows use `Me:`/`AI:` markers
+   - If `includeTools=true`, appends `<Tool Call>/<Args>/<Tool Result>` blocks after each message
 2. **Merged View** (when `chatIds.length > 1`)
-   - **Meta Information**: Basic info for each conversation (title, time range)
-   - **Sequential Chat Narratives**: All messages grouped by conversation; if `includeTools=true`, appends parsed tool calls/results after each message
-   - **Common Content Alignment**: Marks shared messages that appear in all conversations
+   - Sections: `Meta`, `Per-Chat Narrative`, `Common Alignment`
+   - In `Per-Chat Narrative`, messages are grouped by chat; if `includeTools=true`, tool blocks are appended per message
+   - `Common Alignment` contains only messages that appear in all chats, with `Refs: chat#index(idPrefix)`
 
-Message format: `[Chat#Index](ID prefix Time) Role: Content`
+Row format examples:
+- Single chat: `[#[Index]](IDprefix Time) Role: Content`
+- Merged narrative: `[Chat#Index](IDprefix Time) Role: Content`
 
 ## Environment Variables
 
